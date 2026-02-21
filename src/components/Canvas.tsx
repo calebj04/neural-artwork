@@ -10,8 +10,25 @@ function Canvas() {
     const ctx = contextRef.current;
     if (!canvas || !ctx) return;
 
+    const dpr = window.devicePixelRatio || 1; // device pixel ratio for retina
     const W = window.innerWidth;
     const H = window.innerHeight;
+
+    // Set canvas internal resolution
+    canvas.width = W * dpr;
+    canvas.height = H * dpr;
+
+    // Set CSS size
+    canvas.style.width = W + "px";
+    canvas.style.height = H + "px";
+
+    // Reset any existing transform and scale for retina
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+    // Set the origin to the center of the canvas
+    const origin = { x: W / 2, y: H / 2 };
+
+    ctx.clearRect(0, 0, W, H);
 
     // --- Draw the grid ---
     ctx.strokeStyle = "rgba(0,0,0,0.5)";
@@ -20,7 +37,7 @@ function Canvas() {
     const scale = 90;
 
     // Vertical grid lines
-    for (let x = (W / 2) % scale; x < W; x += scale) {
+    for (let x = origin.x % scale; x < W; x += scale) {
       ctx.beginPath();
       ctx.moveTo(x, 0);
       ctx.lineTo(x, H);
@@ -28,7 +45,7 @@ function Canvas() {
     }
 
     // Horizontal grid lines
-    for (let y = (H / 2) % scale; y < H; y += scale) {
+    for (let y = origin.y % scale; y < H; y += scale) {
       ctx.beginPath();
       ctx.moveTo(0, y);
       ctx.lineTo(W, y);
@@ -40,13 +57,13 @@ function Canvas() {
     ctx.lineWidth = 1.5;
 
     ctx.beginPath();
-    ctx.moveTo(W / 2, 0);
-    ctx.lineTo(W / 2, H);
+    ctx.moveTo(origin.x, 0);
+    ctx.lineTo(origin.x, H);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.moveTo(0, H / 2);
-    ctx.lineTo(W, H / 2);
+    ctx.moveTo(0, origin.y);
+    ctx.lineTo(W, origin.y);
     ctx.stroke();
   };
 
@@ -68,7 +85,10 @@ function Canvas() {
     context.lineWidth = 2;
     contextRef.current = context;
 
+    window.addEventListener("resize", drawGrid);
     drawGrid();
+
+    return () => window.removeEventListener("resize", drawGrid);
   }, []);
 
   const startDrawing = (event: React.MouseEvent<HTMLCanvasElement>) => {
